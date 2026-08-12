@@ -1,22 +1,49 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <readline/history.h>
+
 #include <readline/readline.h>
+#include <readline/history.h>
+
+#include "lexer.h"
+
+const char *token_type_name(TokenType type)
+{
+    switch (type)
+    {
+        case TOKEN_WORD:
+            return "WORD";
+
+        case TOKEN_PIPE:
+            return "PIPE";
+
+        case TOKEN_REDIRECT_IN:
+            return "REDIRECT_IN";
+
+        case TOKEN_REDIRECT_OUT:
+            return "REDIRECT_OUT";
+
+        case TOKEN_APPEND:
+            return "APPEND";
+
+        case TOKEN_END:
+            return "END";
+
+        default:
+            return "UNKNOWN";
+    }
+}
 
 int main(void)
 {
-    // Display a welcome banner when the shell starts
     printf("=====================================\n");
     printf("Shellforge\n");
-    printf("A Unix Style Shell written in C\n");
+    printf("Tokenizer and Lexer - Milestone 2\n");
     printf("=====================================\n");
-
-    char *line;
 
     while (1)
     {
-        line = readline("shellforge$ ");
+        char *line = readline("shellforge$ ");
 
         if (line == NULL)
         {
@@ -32,6 +59,24 @@ int main(void)
 
         add_history(line);
 
+        /* History command */
+        if (strcmp(line, "history") == 0)
+        {
+            HIST_ENTRY **hist = history_list();
+
+            if (hist != NULL)
+            {
+                for (int i = 0; hist[i] != NULL; i++)
+                {
+                    printf("%d  %s\n", i + 1, hist[i]->line);
+                }
+            }
+
+            free(line);
+            continue;
+        }
+
+        /* Exit command */
         if (strcmp(line, "exit") == 0)
         {
             free(line);
@@ -39,8 +84,25 @@ int main(void)
             break;
         }
 
-        printf("YOU ENTERED : %s\n", line);
+        int count = 0;
 
+        Token *tokens = tokenize(line, &count);
+
+        if (tokens == NULL)
+        {
+            fprintf(stderr, "Error: Tokenization failed.\n");
+            free(line);
+            continue;
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            printf("Token: %-15s Value: %s\n",
+                   token_type_name(tokens[i].type),
+                   tokens[i].value);
+        }
+
+        free_tokens(tokens, count);
         free(line);
     }
 
