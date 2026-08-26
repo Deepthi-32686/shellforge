@@ -1,39 +1,35 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <ctype.h>
+#include <string.h>
 
 #include "lexer.h"
 
-static char *copy_string(const char *start, size_t length)
+static void add_token(token_list_t *list, token_type_t type,
+                      const char *text)
 {
-    char *result = malloc(length + 1);
-
-    if (result == NULL)
+    if (list->count >= MAX_TOKENS - 1)
     {
-        return NULL;
+        return;
     }
 
-    memcpy(result, start, length);
-    result[length] = '\0';
+    list->tokens[list->count].type = type;
 
-    return result;
+    strncpy(list->tokens[list->count].text,
+            text,
+            MAX_TOKEN_LEN - 1);
+
+    list->tokens[list->count].text[MAX_TOKEN_LEN - 1] = '\0';
+
+    list->count++;
 }
 
-Token *tokenize(const char *input, int *count)
+void lexer(const char *input, token_list_t *list)
 {
-    Token *tokens = malloc(sizeof(Token) * MAX_TOKENS);
+    token_init(list);
 
-    if (tokens == NULL)
-    {
-        return NULL;
-    }
+    int i = 0;
 
-    *count = 0;
-
-    size_t i = 0;
-
-    while (input[i] != '\0' && *count < MAX_TOKENS - 1)
+    while (input[i] != '\0' &&
+           list->count < MAX_TOKENS - 1)
     {
         while (isspace((unsigned char)input[i]))
         {
@@ -45,67 +41,60 @@ Token *tokenize(const char *input, int *count)
             break;
         }
 
-        TokenType type;
-        size_t start = i;
-        size_t length;
-
         if (input[i] == '|')
         {
-            type = TOKEN_PIPE;
+            add_token(list, TOKEN_PIPE, "|");
             i++;
-            length = 1;
         }
         else if (input[i] == '<')
         {
-            type = TOKEN_REDIRECT_IN;
+            add_token(list, TOKEN_INPUT, "<");
             i++;
-            length = 1;
         }
         else if (input[i] == '>')
         {
             if (input[i + 1] == '>')
             {
-                type = TOKEN_APPEND;
+                add_token(list, TOKEN_APPEND, ">>");
                 i += 2;
-                length = 2;
             }
             else
             {
-                type = TOKEN_REDIRECT_OUT;
+                add_token(list, TOKEN_OUTPUT, ">");
                 i++;
-                length = 1;
             }
+        }
+        else if (input[i] == '&')
+        {
+            add_token(list, TOKEN_BACKGROUND, "&");
+            i++;
         }
         else
         {
-            type = TOKEN_WORD;
+            char word[MAX_TOKEN_LEN];
+            int j = 0;
 
             while (input[i] != '\0' &&
                    !isspace((unsigned char)input[i]) &&
                    input[i] != '|' &&
                    input[i] != '<' &&
-                   input[i] != '>')
+                   input[i] != '>' &&
+                   input[i] != '&')
             {
+                if (j < MAX_TOKEN_LEN - 1)
+                {
+                    word[j++] = input[i];
+                }
+
                 i++;
             }
 
-            length = i - start;
+            word[j] = '\0';
+
+            add_token(list, TOKEN_WORD, word);
         }
-
-        tokens[*count].type = type;
-        tokens[*count].value = copy_string(input + start, length);
-
-        if (tokens[*count].value == NULL)
-        {
-            free_tokens(tokens, *count);
-            return NULL;
-        }
-
-        (*count)++;
     }
 
-    tokens[*count].type = TOKEN_END;
-    tokens[*count].value = NULL;
-
-    return tokens;
+    list->tokens[list->count].type = TOKEN_END;
+    list->tokens[list->count].text[0] = '\0';
 }

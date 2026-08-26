@@ -2,21 +2,29 @@
 #define TOKEN_H
 
 #define MAX_TOKENS 100
+#define MAX_TOKEN_LEN 256
 
 typedef enum {
     TOKEN_WORD,
-    TOKEN_PIPE,
-    TOKEN_REDIRECT_IN,
-    TOKEN_REDIRECT_OUT,
+    TOKEN_INPUT,
+    TOKEN_OUTPUT,
     TOKEN_APPEND,
+    TOKEN_PIPE,
+    TOKEN_BACKGROUND,
     TOKEN_END
-} TokenType;
+} token_type_t;
 
 typedef struct {
-    TokenType type;
-    char *value;
-} Token;
+    token_type_t type;
+    char text[MAX_TOKEN_LEN];
+} token_t;
 
-void free_tokens(Token *tokens, int count);
+typedef struct {
+    token_t tokens[MAX_TOKENS];
+    int count;
+} token_list_t;
+
+void token_init(token_list_t *list);
+void token_print(const token_list_t *list);
 
 #endif

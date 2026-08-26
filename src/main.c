@@ -5,45 +5,26 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+#include "token.h"
 #include "lexer.h"
-
-const char *token_type_name(TokenType type)
-{
-    switch (type)
-    {
-        case TOKEN_WORD:
-            return "WORD";
-
-        case TOKEN_PIPE:
-            return "PIPE";
-
-        case TOKEN_REDIRECT_IN:
-            return "REDIRECT_IN";
-
-        case TOKEN_REDIRECT_OUT:
-            return "REDIRECT_OUT";
-
-        case TOKEN_APPEND:
-            return "APPEND";
-
-        case TOKEN_END:
-            return "END";
-
-        default:
-            return "UNKNOWN";
-    }
-}
+#include "parser.h"
+#include "expand.h"
+#include "builtin.h"
 
 int main(void)
 {
-    printf("=====================================\n");
-    printf("Shellforge\n");
-    printf("Tokenizer and Lexer - Milestone 2\n");
-    printf("=====================================\n");
+    token_list_t tokens;
+    pipeline_t pipeline;
+    char *line;
+
+    printf("========================================\n");
+    printf("    Shellforge\n");
+    printf(" A Unix Style Shell written in C\n");
+    printf("========================================\n");
 
     while (1)
     {
-        char *line = readline("shellforge$ ");
+        line = readline("shellforge$ ");
 
         if (line == NULL)
         {
@@ -59,50 +40,27 @@ int main(void)
 
         add_history(line);
 
-        /* History command */
-        if (strcmp(line, "history") == 0)
-        {
-            HIST_ENTRY **hist = history_list();
+        lexer(line, &tokens);
+        token_print(&tokens);
 
-            if (hist != NULL)
+        if (parse(&tokens, &pipeline))
+        {
+            expand_variables(&pipeline);
+            pipeline_print(&pipeline);
+
+            /*
+             * Milestone 3.1:
+             * Execute built-in commands in the shell process.
+             */
+            if (pipeline.command_count == 1)
             {
-                for (int i = 0; hist[i] != NULL; i++)
-                {
-                    printf("%d  %s\n", i + 1, hist[i]->line);
-                }
+                execute_builtin(
+                    pipeline.commands[0].argc,
+                    pipeline.commands[0].argv
+                );
             }
-
-            free(line);
-            continue;
         }
 
-        /* Exit command */
-        if (strcmp(line, "exit") == 0)
-        {
-            free(line);
-            printf("Exiting...\n");
-            break;
-        }
-
-        int count = 0;
-
-        Token *tokens = tokenize(line, &count);
-
-        if (tokens == NULL)
-        {
-            fprintf(stderr, "Error: Tokenization failed.\n");
-            free(line);
-            continue;
-        }
-
-        for (int i = 0; i < count; i++)
-        {
-            printf("Token: %-15s Value: %s\n",
-                   token_type_name(tokens[i].type),
-                   tokens[i].value);
-        }
-
-        free_tokens(tokens, count);
         free(line);
     }
 

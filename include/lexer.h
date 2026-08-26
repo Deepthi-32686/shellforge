@@ -3,6 +3,6 @@
 
 #include "token.h"
 
-Token *tokenize(const char *input, int *count);
+void lexer(const char *input, token_list_t *list);
 
 #endif
