@@ -10,6 +10,7 @@
 #include "parser.h"
 #include "expand.h"
 #include "builtin.h"
+#include "executor.h"
 
 int main(void)
 {
@@ -49,15 +50,19 @@ int main(void)
             pipeline_print(&pipeline);
 
             /*
-             * Milestone 3.1:
+             * Milestone 3.2:
              * Execute built-in commands in the shell process.
+             * Execute external commands using fork(), execvp()
+             * and waitpid().
              */
             if (pipeline.command_count == 1)
             {
-                execute_builtin(
-                    pipeline.commands[0].argc,
-                    pipeline.commands[0].argv
-                );
+                command_t *cmd = &pipeline.commands[0];
+
+                if (!execute_builtin(cmd->argc, cmd->argv))
+                {
+                    execute_external(cmd);
+                }
             }
         }
 
