@@ -50,10 +50,11 @@ int main(void)
             pipeline_print(&pipeline);
 
             /*
-             * Milestone 3.2:
-             * Execute built-in commands in the shell process.
-             * Execute external commands using fork(), execvp()
-             * and waitpid().
+             * Single command:
+             *
+             * First check whether it is a built-in.
+             * If it is not a built-in, execute it as
+             * an external command.
              */
             if (pipeline.command_count == 1)
             {
@@ -63,6 +64,15 @@ int main(void)
                 {
                     execute_external(cmd);
                 }
+            }
+            /*
+             * Multiple commands:
+             *
+             * Execute them as a pipeline.
+             */
+            else
+            {
+                execute_pipeline(&pipeline);
             }
         }
 
